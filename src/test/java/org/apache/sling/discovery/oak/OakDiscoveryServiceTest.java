@@ -19,6 +19,7 @@
 package org.apache.sling.discovery.oak;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -37,6 +38,7 @@ import org.apache.sling.discovery.base.its.setup.OSGiMock;
 import org.apache.sling.discovery.base.its.setup.VirtualInstance;
 import org.apache.sling.discovery.base.its.setup.mock.DummyResourceResolverFactory;
 import org.apache.sling.discovery.base.its.setup.mock.MockFactory;
+import org.apache.sling.discovery.commons.providers.BaseTopologyView;
 import org.apache.sling.discovery.commons.providers.base.DummyListener;
 import org.apache.sling.discovery.commons.providers.spi.base.DescriptorHelper;
 import org.apache.sling.discovery.commons.providers.spi.base.DiscoveryLiteConfig;
@@ -332,5 +334,54 @@ public class OakDiscoveryServiceTest {
     
     private ResourceResolver getResourceResolver(ResourceResolverFactory resourceResolverFactory) throws LoginException {
         return resourceResolverFactory.getServiceResourceResolver(null);
+    }
+
+    @Test
+    public void testInvertedLeaderElectionOrder() throws Exception {
+        logger.info("testInvertedLeaderElectionOrder: start");
+        // instance1 should be leader
+        BaseTopologyView lastView = doTestInvertedLeaderElectionOrder(20, 10);
+        assertTrue(lastView.getLocalInstance().isLeader());
+        // instance2 should be leader
+        lastView = doTestInvertedLeaderElectionOrder(10, 20);
+        assertFalse(lastView.getLocalInstance().isLeader());
+        // instance1 should be leader
+        lastView = doTestInvertedLeaderElectionOrder(10, 10);
+        assertTrue(lastView.getLocalInstance().isLeader());
+    }
+
+    private BaseTopologyView doTestInvertedLeaderElectionOrder(final int instance1Prefix, final int instance2Prefix)
+            throws Exception {
+        OakVirtualInstanceBuilder builder1 =
+                (OakVirtualInstanceBuilder) new OakVirtualInstanceBuilder()
+                .setDebugName("instance1")
+                .newRepository("/foo/barrio/foo/", true)
+                .setConnectorPingInterval(999)
+                .setConnectorPingTimeout(999);
+        builder1.getConfig().leaderElectionPrefix = instance1Prefix;
+        builder1.getConfig().invertLeaderElectionPrefixOrder = true;
+        VirtualInstance instance1 = builder1.build();
+        OakVirtualInstanceBuilder builder2 =
+                (OakVirtualInstanceBuilder) new OakVirtualInstanceBuilder()
+                .setDebugName("instance2")
+                .useRepositoryOf(instance1)
+                .setConnectorPingInterval(999)
+                .setConnectorPingTimeout(999);
+        builder2.getConfig().leaderElectionPrefix = instance2Prefix;
+        builder2.getConfig().invertLeaderElectionPrefixOrder = true;
+        VirtualInstance instance2 = builder2.build();
+    
+        DummyListener listener = new DummyListener();
+        OakDiscoveryService discoveryService = (OakDiscoveryService) instance1.getDiscoveryService();
+        discoveryService.bindTopologyEventListener(listener);
+    
+        instance1.heartbeatsAndCheckView();
+        instance2.heartbeatsAndCheckView();
+        instance1.heartbeatsAndCheckView();
+        instance2.heartbeatsAndCheckView();
+    
+        assertEquals(0, discoveryService.getViewStateManager().waitForAsyncEvents(2000));
+        assertEquals(1, listener.countEvents());
+        return listener.getLastView();
     }
 }

@@ -292,7 +292,7 @@ public class OakViewChecker extends BaseViewChecker {
         String currentTimeMillisStr = String.format("%0"
                 + maxLongLength + "d", System.currentTimeMillis());
 
-        String prefix = "1";
+        String prefix = String.valueOf(config.getLeaderElectionPrefix());
 
         final String newLeaderElectionId = prefix + "_"
                 + currentTimeMillisStr + "_" + slingId;

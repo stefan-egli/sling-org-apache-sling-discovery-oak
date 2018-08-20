@@ -196,14 +196,7 @@ public class OakClusterViewService implements ClusterViewService {
             leaderElectionIds.put(id, leaderElectionId);
         }
 
-        Collections.sort(activeIdsList, new Comparator<Integer>() {
-
-            @Override
-            public int compare(Integer arg0, Integer arg1) {
-                return leaderElectionIds.get(arg0)
-                        .compareTo(leaderElectionIds.get(arg1));
-            }
-        });
+        leaderElectionSort(activeIdsList, leaderElectionIds);
 
         for(int i=0; i<activeIdsList.size(); i++) {
             int id = activeIdsList.get(i);
@@ -231,6 +224,66 @@ public class OakClusterViewService implements ClusterViewService {
             throw new UndefinedClusterViewException(Reason.ISOLATED_FROM_TOPOLOGY,
                     "established view does not include local instance - isolated");
         }
+    }
+
+    private void leaderElectionSort(List<Integer> activeIdsList, final Map<Integer, String> leaderElectionIds) {
+        final Comparator<Integer> comparator;
+        if (config.isInvertLeaderElectionPrefixOrder()) {
+            // SLING-7830 : inverted leaderElectionPrefix sorting
+            comparator = new Comparator<Integer>() {
+                
+                private long prefixOf(String leaderElectionId) {
+                    final int underScore = leaderElectionId.indexOf("_");
+                    if (underScore == -1) {
+                        return -1;
+                    }
+                    final String prefixStr = leaderElectionId.substring(0, underScore);
+                    try{
+                        return Long.parseLong(prefixStr);
+                    } catch(Exception e) {
+                        return -1;
+                    }
+                }
+
+                @Override
+                public int compare(Integer arg0, Integer arg1) {
+                    // 'inverted sorting' means that the prefix is ordered descending
+                    // while the remainder is ordered ascending
+                    final String leaderElectionId0 = leaderElectionIds.get(arg0);
+                    final String leaderElectionId1 = leaderElectionIds.get(arg1);
+                    // so first step is to order the part before '_', eg the '1' in
+                    // 1_0000001534409616936_374019fc-68bd-4c8d-a4cf-8ee8b07c63bc
+                    final long prefix0 = prefixOf(leaderElectionId0);
+                    final long prefix1 = prefixOf(leaderElectionId1);
+                    // if a prefix is -1 (due to eg wrong formatting) it automatically
+                    // ends up at the end
+                    if (prefix0 == prefix1) {
+                        // if they are the same, order the classic way
+                        // note that when they are both '-1' that can be one of the following
+                        // -1_0000001534409616936_374019fc-68bd-4c8d-a4cf-8ee8b07c63bc
+                        // _0000001534409616936_374019fc-68bd-4c8d-a4cf-8ee8b07c63bc
+                        // notALong_0000001534409616936_374019fc-68bd-4c8d-a4cf-8ee8b07c63bc
+                        // so all of the above three get compared the classic way
+                        return leaderElectionId0
+                                .compareTo(leaderElectionId1);
+                    } else {
+                        // inverted order comparison:
+                        return new Long(prefix1).compareTo(prefix0);
+                    }
+                }
+
+            };
+        } else {
+            comparator = new Comparator<Integer>() {
+    
+                @Override
+                public int compare(Integer arg0, Integer arg1) {
+                    return leaderElectionIds.get(arg0)
+                            .compareTo(leaderElectionIds.get(arg1));
+                }
+            };
+        }
+        Collections.sort(activeIdsList, comparator);
     }
 
     /**
