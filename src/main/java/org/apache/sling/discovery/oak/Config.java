@@ -179,6 +179,16 @@ public class Config implements BaseConfig, DiscoveryLiteConfig {
     private static final String BACKOFF_STABLE_FACTOR = "backoffStableFactor";
     private static final int DEFAULT_BACKOFF_STABLE_FACTOR = 5;
 
+    private static final long DEFAULT_LEADER_ELECTION_PREFIX = 1;
+    @Property(longValue=DEFAULT_LEADER_ELECTION_PREFIX)
+    private static final String LEADER_ELECTION_PREFIX = "leaderElectionPrefix";
+    protected long leaderElectionPrefix = DEFAULT_LEADER_ELECTION_PREFIX;
+
+    private static final boolean DEFAULT_INVERT_LEADER_ELECTION_PREFIX_ORDER = false;
+    @Property(boolValue=DEFAULT_INVERT_LEADER_ELECTION_PREFIX_ORDER)
+    private static final String INVERT_LEADER_ELECTION_PREFIX_ORDER = "invertLeaderElectionPrefixOrder";
+    protected boolean invertLeaderElectionPrefixOrder = DEFAULT_INVERT_LEADER_ELECTION_PREFIX_ORDER;
+    
     /** True when auto-stop of a local-loop is enabled. Default is false. **/
     private boolean autoStopLocalLoopEnabled;
     
@@ -339,6 +349,17 @@ public class Config implements BaseConfig, DiscoveryLiteConfig {
                 DEFAULT_BACKOFF_STANDBY_FACTOR);
         backoffStableFactor = PropertiesUtil.toInteger(properties.get(BACKOFF_STABLE_FACTOR), 
                 DEFAULT_BACKOFF_STABLE_FACTOR);
+
+        this.invertLeaderElectionPrefixOrder = PropertiesUtil.toBoolean(
+                properties.get(INVERT_LEADER_ELECTION_PREFIX_ORDER),
+                DEFAULT_INVERT_LEADER_ELECTION_PREFIX_ORDER);
+        logger.debug("configure: invertLeaderElectionPrefixOrder='{}'",
+                this.invertLeaderElectionPrefixOrder);
+        this.leaderElectionPrefix = PropertiesUtil.toLong(
+                properties.get(LEADER_ELECTION_PREFIX),
+                DEFAULT_LEADER_ELECTION_PREFIX);
+        logger.debug("configure: leaderElectionPrefix='{}'",
+                this.leaderElectionPrefix);
     }
 
     /**
@@ -505,5 +526,13 @@ public class Config implements BaseConfig, DiscoveryLiteConfig {
     
     public boolean getSyncTokenEnabled() {
         return syncTokenEnabled;
+    }
+
+    public boolean isInvertLeaderElectionPrefixOrder() {
+        return invertLeaderElectionPrefixOrder;
+    }
+
+    public long getLeaderElectionPrefix() {
+        return leaderElectionPrefix;
     }
 }

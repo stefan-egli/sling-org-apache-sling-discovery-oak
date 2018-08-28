@@ -112,7 +112,7 @@ public class OakVirtualInstanceBuilder extends VirtualInstanceBuilder {
         return OakClusterViewService.testConstructor(getSlingSettingsService(), getResourceResolverFactory(), getIdMapService(), getConfig());
     }
 
-    OakTestConfig getConfig() {
+    public OakTestConfig getConfig() {
         if (config==null) {
             config = createConfig();
         }
