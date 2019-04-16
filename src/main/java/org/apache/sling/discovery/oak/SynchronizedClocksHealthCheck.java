@@ -140,7 +140,7 @@ public class SynchronizedClocksHealthCheck implements HealthCheck {
         } else {
             final Collection<Announcement> localAnnouncements = announcementRegistry.listLocalAnnouncements();
             if (localAnnouncements.isEmpty()) {
-                logger.info("execute: no topology connectors connected to local instance.");
+                logger.debug("execute: no topology connectors connected to local instance.");
                 resultLog.info("No topology connectors connected to local instance.");
             }
             for (Announcement ann : localAnnouncements) {
