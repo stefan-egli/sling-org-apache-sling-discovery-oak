@@ -775,6 +775,11 @@ public class TopologyWebConsolePlugin extends AbstractWebConsolePlugin implement
         ResourceResolver resourceResolver = null;
         try{
             resourceResolver = getResourceResolver();
+        } catch(Exception e) {
+            logger.error("addDiscoveryLiteHistoryEntry: Exception: "+e, e);
+            return;
+        }
+        try {
             DiscoveryLiteDescriptor descriptor =
                     DiscoveryLiteDescriptor.getDescriptorFrom(resourceResolver);
 
@@ -790,7 +795,9 @@ public class TopologyWebConsolePlugin extends AbstractWebConsolePlugin implement
                 discoveryLiteHistory.remove(0);
             }
         } catch(Exception e) {
-            logger.error("addDiscoveryLiteHistoryEntry: Exception: "+e, e);
+            // SLING-10204 : log less noisy as this can legitimately happen
+            logger.warn("addDiscoveryLiteHistoryEntry: got Exception (enable debug logging to see stacktrace) : " + e);
+            logger.debug("addDiscoveryLiteHistoryEntry: Exception stacktrace", e);
         } finally {
             if (resourceResolver != null) {
                 resourceResolver.close();
