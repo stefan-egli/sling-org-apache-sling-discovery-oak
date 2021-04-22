@@ -111,7 +111,8 @@ public class OakClusterViewService implements ClusterViewService {
         try{
             resourceResolver = getResourceResolver();
         } catch (Exception e) {
-            logger.error("getLocalClusterView: repository exception: "+e, e);
+            logger.warn("getLocalClusterView: repository exception (enable debug logging to see stacktrace) : " + e);
+            logger.debug("getLocalClusterView: Exception stacktrace", e);
             throw new UndefinedClusterViewException(Reason.REPOSITORY_EXCEPTION, "Exception while processing descriptor: "+e);
         }
         DiscoveryLiteDescriptor descriptor = null;
