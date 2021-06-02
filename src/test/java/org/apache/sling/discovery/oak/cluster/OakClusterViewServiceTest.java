@@ -24,7 +24,7 @@ import static org.junit.Assert.fail;
 import org.apache.sling.discovery.base.commons.ClusterViewService;
 import org.apache.sling.discovery.base.commons.UndefinedClusterViewException;
 import org.apache.sling.discovery.base.its.setup.VirtualInstance;
-import org.apache.sling.discovery.base.its.setup.mock.DummyResourceResolverFactory;
+import org.apache.sling.discovery.commons.providers.spi.base.IdMapService;
 import org.apache.sling.discovery.oak.its.setup.OakVirtualInstanceBuilder;
 import org.junit.Test;
 
@@ -62,7 +62,24 @@ public class OakClusterViewServiceTest {
         instance1.heartbeatsAndCheckView();
         instance2.heartbeatsAndCheckView();
 
+        // this should not fail:
         assertNotNull(cvs1.getLocalClusterView());
+
+        final ClusterViewService cvs2 = instance2.getClusterViewService();
+        final IdMapService idMapService = builder2.getIdMapService();
+        idMapService.clearCache();
+        idMapService.clearCache();
+        // this should not fail neither:
+        assertNotNull(cvs2.getLocalClusterView());
+
+        instance2.shutdownRepository();
+        try {
+            // but this should fail as the repository is shutdown
+            cvs2.getLocalClusterView();
+            fail("should throw UndefinedClusterViewException");
+        } catch(UndefinedClusterViewException e) {
+            // ok
+        }
     }
 
     @Test

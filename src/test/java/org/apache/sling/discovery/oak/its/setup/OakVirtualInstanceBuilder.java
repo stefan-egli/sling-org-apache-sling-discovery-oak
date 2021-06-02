@@ -22,6 +22,7 @@ import static org.junit.Assert.fail;
 
 import javax.jcr.Session;
 
+import org.apache.jackrabbit.api.JackrabbitRepository;
 import org.apache.jackrabbit.oak.plugins.memory.MemoryNodeStore;
 import org.apache.jackrabbit.oak.spi.state.NodeStore;
 import org.apache.sling.api.resource.ResourceResolver;
@@ -39,7 +40,6 @@ import org.apache.sling.discovery.commons.providers.spi.base.SyncTokenService;
 import org.apache.sling.discovery.oak.OakDiscoveryService;
 import org.apache.sling.discovery.oak.cluster.OakClusterViewService;
 import org.apache.sling.discovery.oak.pinger.OakViewChecker;
-import org.apache.sling.jcr.api.SlingRepository;
 import org.osgi.service.component.ComponentContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,8 +64,8 @@ public class OakVirtualInstanceBuilder extends VirtualInstanceBuilder {
     @Override
     public VirtualInstanceBuilder createNewRepository() throws Exception {
         nodeStore = new MemoryNodeStore();
-        SlingRepository repository = RepositoryTestHelper.newOakRepository(nodeStore);
-        factory = MockFactory.mockResourceResolverFactory(repository);
+        JackrabbitRepository jcrRepo = (JackrabbitRepository) RepositoryTestHelper.createOakRepository(nodeStore);
+        factory = MockFactory.mockResourceResolverFactory(jcrRepo);
         leaseCollection = new SimulatedLeaseCollection();
         return this;
     }
@@ -77,8 +77,8 @@ public class OakVirtualInstanceBuilder extends VirtualInstanceBuilder {
         }
         OakVirtualInstanceBuilder otherOakbuilder = (OakVirtualInstanceBuilder)other;
         nodeStore = otherOakbuilder.nodeStore;
-        SlingRepository repository = RepositoryTestHelper.newOakRepository(nodeStore);
-        factory = MockFactory.mockResourceResolverFactory(repository);
+        JackrabbitRepository jcrRepo = (JackrabbitRepository) RepositoryTestHelper.createOakRepository(nodeStore);
+        factory = MockFactory.mockResourceResolverFactory(jcrRepo);
         leaseCollection = otherOakbuilder.leaseCollection;
         hookedToBuilder = other;
         ownRepository = false;
