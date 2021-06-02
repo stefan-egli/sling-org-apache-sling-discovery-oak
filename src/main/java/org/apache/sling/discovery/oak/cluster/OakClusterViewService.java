@@ -108,27 +108,17 @@ public class OakClusterViewService implements ClusterViewService {
     public LocalClusterView getLocalClusterView() throws UndefinedClusterViewException {
         logger.trace("getLocalClusterView: start");
         ResourceResolver resourceResolver = null;
-        try{
-            resourceResolver = getResourceResolver();
-        } catch (Exception e) {
-            logger.error("getLocalClusterView: repository exception: "+e, e);
-            throw new UndefinedClusterViewException(Reason.REPOSITORY_EXCEPTION, "Exception while processing descriptor: "+e);
-        }
-        DiscoveryLiteDescriptor descriptor = null;
         try {
-            descriptor = DiscoveryLiteDescriptor.getDescriptorFrom(resourceResolver);
-        } catch (Exception e) {
-            // SLING-10204 : log less noisy as this can legitimately happen
-            logger.warn("getLocalClusterView: got Exception (enable debug logging to see stacktrace) : " + e);
-            logger.debug("getLocalClusterView: Exception stacktrace", e);
-            throw new UndefinedClusterViewException(Reason.REPOSITORY_EXCEPTION, "Exception while processing descriptor: "+e);
-        } finally {
-            logger.trace("getLocalClusterView: end");
-            if (resourceResolver!=null) {
-                resourceResolver.close();
+            DiscoveryLiteDescriptor descriptor = null;
+            try{
+                resourceResolver = getResourceResolver();
+                descriptor = DiscoveryLiteDescriptor.getDescriptorFrom(resourceResolver);
+            } catch (Exception e) {
+                // SLING-10204 : log less noisy as this can legitimately happen
+                logger.warn("getLocalClusterView: got Exception (enable debug logging to see stacktrace) : " + e);
+                logger.debug("getLocalClusterView: Exception stacktrace", e);
+                throw new UndefinedClusterViewException(Reason.REPOSITORY_EXCEPTION, "Exception while processing descriptor: "+e);
             }
-        }
-        try {
             if (lastSeqNum!=descriptor.getSeqNum()) {
                 logger.info("getLocalClusterView: sequence number change detected - clearing idmap cache");
                 idMapService.clearCache();
