@@ -144,7 +144,7 @@ public class PartialStartupDetector {
         logger.info(
                 "suppressMissingSyncToken: ignoring partially started clusterNode without valid syncToken (in "
                         + config.getSyncTokenPath() + ") : " + id
-                        + " (expected at least: " + seqNum + ", is: " + syncToken);
+                        + " (expected at least: " + seqNum + ", is: " + syncToken + ")");
         return true;
     }
 
