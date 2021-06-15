@@ -83,6 +83,7 @@ public class PartialStartupDetector {
 
         // suppressing is enabled
         // * when so configured
+        // * we haven't hit the timeout yet
         // * when the local instance ever showed to peers that it has fully started.
         // and one way to verify for that is to demand that it ever wrote a synctoken.
         // and to check that we keep note of the first ever successful seq num returned
