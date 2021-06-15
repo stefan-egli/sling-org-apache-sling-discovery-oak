@@ -69,7 +69,7 @@ public class PartialStartupDetector {
 
     private final boolean syncTokenEnabled;
 
-    private final boolean suppressApplicable;
+    private final boolean suppressingApplicable;
     private final Set<Integer> partiallyStartedClusterNodeIds = new HashSet<>();
 
     PartialStartupDetector(ResourceResolver resourceResolver, Config config,
@@ -90,17 +90,14 @@ public class PartialStartupDetector {
         // and require the current syncToken to be at least that.
         final long now = System.currentTimeMillis();
         final long mySyncToken = readSyncToken(resourceResolver, mySlingId);
-        suppressApplicable = config.getSuppressPartiallyStartedInstances()
+        suppressingApplicable = config.getSuppressPartiallyStartedInstances()
                 && ((timeout == 0) || (now < timeout))
                 && (mySyncToken != -1) && (lowestSeqNum != -1)
                 && (mySyncToken >= lowestSeqNum);
     }
 
     private boolean isSuppressing(int id) {
-        if (!suppressApplicable || (id == me)) {
-            return false;
-        }
-        return true;
+        return suppressingApplicable && (id != me);
     }
 
     private long readSyncToken(ResourceResolver resourceResolver, String slingId) {
