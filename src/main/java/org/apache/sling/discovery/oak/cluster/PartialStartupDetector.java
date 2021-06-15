@@ -30,30 +30,31 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Discovery.oak requires that both Oak and Sling are operating normally in order
- * to declare victory and announce a new topology.
+ * Discovery.oak requires that both Oak and Sling are operating normally in
+ * order to declare victory and announce a new topology.
  * <p/>
- * The startup phase is especially tricky in this regard, since there are multiple
- * elements that need to get updated (some are in the Oak layer, some in Sling):
+ * The startup phase is especially tricky in this regard, since there are
+ * multiple elements that need to get updated (some are in the Oak layer, some
+ * in Sling):
  * <ul>
  * <li>lease & clusterNodeId : this is maintained by Oak</li>
  * <li>idMap : this is maintained by IdMapService</li>
  * <li>leaderElectionId : this is maintained by OakViewChecker</li>
  * <li>syncToken : this is maintained by SyncTokenService</li>
  * </ul>
- * A successful join of a cluster instance to the topology requires
- * all 4 elements to be set (and maintained, in case of lease and syncToken) correctly.
+ * A successful join of a cluster instance to the topology requires all 4
+ * elements to be set (and maintained, in case of lease and syncToken)
+ * correctly.
  * <p/>
- * This PartialStartupDetector is in charge of ensuring that a newly
- * joined instance has all these elements set. Otherwise it is considered
- * a "partially started instance" (PSI) and suppressed.
+ * This PartialStartupDetector is in charge of ensuring that a newly joined
+ * instance has all these elements set. Otherwise it is considered a "partially
+ * started instance" (PSI) and suppressed.
  * <p/>
- * The suppression ensures that existing instances aren't blocked by
- * a rogue, partially starting instance. However, there's also a timeout
- * after which the suppression is no longer applied - at which point
- * such a rogue instance will block existing instances. Infrastructure
- * must ensure that a rogue instance is detected and restarted/fixed
- * in a reasonable amount of time.
+ * The suppression ensures that existing instances aren't blocked by a rogue,
+ * partially starting instance. However, there's also a timeout after which the
+ * suppression is no longer applied - at which point such a rogue instance will
+ * block existing instances. Infrastructure must ensure that a rogue instance is
+ * detected and restarted/fixed in a reasonable amount of time.
  */
 public class PartialStartupDetector {
 
@@ -73,8 +74,8 @@ public class PartialStartupDetector {
     private final boolean suppressApplicable;
     private final Set<Integer> partiallyStartedClusterNodeIds = new HashSet<>();
 
-    PartialStartupDetector(ResourceResolver resourceResolver, Config config, long lowestSeqNum,
-            int me, String mySlingId, long seqNum, long timeout) {
+    PartialStartupDetector(ResourceResolver resourceResolver, Config config,
+            long lowestSeqNum, int me, String mySlingId, long seqNum, long timeout) {
         this.resourceResolver = resourceResolver;
         this.config = config;
         this.me = me;
@@ -87,13 +88,14 @@ public class PartialStartupDetector {
         // suppressing is enabled
         // * when so configured
         // * when the local instance ever showed to peers that it has fully started.
-        //   and one way to verify for that is to demand that it ever wrote a synctoken.
-        //   and to check that we keep note of the first ever successful seq num returned here
-        //   and require the current syncToken to be at least that.
+        // and one way to verify for that is to demand that it ever wrote a synctoken.
+        // and to check that we keep note of the first ever successful seq num returned
+        // here
+        // and require the current syncToken to be at least that.
         final long mySyncToken = readSyncToken(resourceResolver, mySlingId);
-        suppressApplicable = config.getSuppressPartiallyStartedInstances() &&
-                (mySyncToken != -1) && (lowestSeqNum != -1)
-                        && (mySyncToken >= lowestSeqNum);
+        suppressApplicable = config.getSuppressPartiallyStartedInstances()
+                && (mySyncToken != -1) && (lowestSeqNum != -1)
+                && (mySyncToken >= lowestSeqNum);
     }
 
     private boolean isSuppressing(int id) {
@@ -107,10 +109,11 @@ public class PartialStartupDetector {
     }
 
     private long readSyncToken(ResourceResolver resourceResolver, String slingId) {
-        if (slingId==null) {
+        if (slingId == null) {
             throw new IllegalStateException("slingId must not be null");
         }
-        final Resource syncTokenNode = resourceResolver.getResource(config.getSyncTokenPath());
+        final Resource syncTokenNode = resourceResolver
+                .getResource(config.getSyncTokenPath());
         if (syncTokenNode == null) {
             return -1;
         }
@@ -119,7 +122,8 @@ public class PartialStartupDetector {
         try {
             return Long.parseLong(syncTokenStr);
         } catch (NumberFormatException nfe) {
-            logger.warn("readSyncToken: unparsable (non long) syncToken: " + syncTokenStr);
+            logger.warn(
+                    "readSyncToken: unparsable (non long) syncToken: " + syncTokenStr);
             return -1;
         }
     }
@@ -129,8 +133,9 @@ public class PartialStartupDetector {
             return false;
         }
         partiallyStartedClusterNodeIds.add(id);
-        logger.info("suppressMissingIdMap: ignoring partially started clusterNode without idMap entry (in "
-                + config.getIdMapPath() + ") : " + id);
+        logger.info(
+                "suppressMissingIdMap: ignoring partially started clusterNode without idMap entry (in "
+                        + config.getIdMapPath() + ") : " + id);
         return true;
     }
 
@@ -143,8 +148,10 @@ public class PartialStartupDetector {
             return false;
         }
         partiallyStartedClusterNodeIds.add(id);
-        logger.info("suppressMissingSyncToken: ignoring partially started clusterNode without valid syncToken (in "
-                + config.getSyncTokenPath() + ") : " + id + " (expected at least: " + seqNum + ", is: " + syncToken);
+        logger.info(
+                "suppressMissingSyncToken: ignoring partially started clusterNode without valid syncToken (in "
+                        + config.getSyncTokenPath() + ") : " + id
+                        + " (expected at least: " + seqNum + ", is: " + syncToken);
         return true;
     }
 
@@ -153,8 +160,9 @@ public class PartialStartupDetector {
             return false;
         }
         partiallyStartedClusterNodeIds.add(id);
-        logger.info("suppressMissingLeaderElectionId: ignoring partially started clusterNode without leaderElectionId (in "
-                + config.getClusterInstancesPath() + ") : " + id);
+        logger.info(
+                "suppressMissingLeaderElectionId: ignoring partially started clusterNode without leaderElectionId (in "
+                        + config.getClusterInstancesPath() + ") : " + id);
         return true;
     }
 
