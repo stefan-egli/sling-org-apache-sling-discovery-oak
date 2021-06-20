@@ -58,26 +58,31 @@ import org.slf4j.LoggerFactory;
  */
 public class PartialStartupDetector {
 
-    static final long SUPPRESSION_TIMEOUT_MILLIS = 45 * 60 * 1000;
-
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private final ResourceResolver resourceResolver;
     private final Config config;
     private final int me;
-    private final long seqNum;
+    private final long currentSeqNum;
 
     private final boolean syncTokenEnabled;
 
     private final boolean suppressingApplicable;
     private final Set<Integer> partiallyStartedClusterNodeIds = new HashSet<>();
 
+    /**
+     * @param lowestLocalSeqNum the lowest sequence number which
+     * the local OakClusterViewService has handled as part of asClusterView
+     * @param me the clusterNodeId (provided by oak) of the local instance (==me)
+     * @param timeoutMillis -1 or 0 disables the timeout, otherwise the suppression
+     * is only done for the provided maximum number of milliseconds.
+     */
     PartialStartupDetector(ResourceResolver resourceResolver, Config config,
-            long lowestSeqNum, int me, String mySlingId, long seqNum, long timeout) {
+            long lowestLocalSeqNum, int me, String mySlingId, long currentSeqNum, long timeoutMillis) {
         this.resourceResolver = resourceResolver;
         this.config = config;
         this.me = me;
-        this.seqNum = seqNum;
+        this.currentSeqNum = currentSeqNum;
 
         this.syncTokenEnabled = config != null && config.getSyncTokenEnabled();
 
@@ -91,10 +96,10 @@ public class PartialStartupDetector {
         // and require the current syncToken to be at least that.
         final long now = System.currentTimeMillis();
         final long mySyncToken = readSyncToken(resourceResolver, mySlingId);
-        suppressingApplicable = config.getSuppressPartiallyStartedInstances()
-                && ((timeout == 0) || (now < timeout))
-                && (mySyncToken != -1) && (lowestSeqNum != -1)
-                && (mySyncToken >= lowestSeqNum);
+        suppressingApplicable = (config != null && config.getSuppressPartiallyStartedInstances())
+                && ((timeoutMillis <= 0) || (now < timeoutMillis))
+                && (mySyncToken != -1) && (lowestLocalSeqNum != -1)
+                && (mySyncToken >= lowestLocalSeqNum);
     }
 
     private boolean isSuppressing(int id) {
@@ -111,7 +116,13 @@ public class PartialStartupDetector {
             return -1;
         }
         final ValueMap resourceMap = syncTokenNode.adaptTo(ValueMap.class);
+        if (resourceMap == null) {
+            return -1;
+        }
         final String syncTokenStr = resourceMap.get(slingId, String.class);
+        if (syncTokenStr == null) {
+            return -1;
+        }
         try {
             return Long.parseLong(syncTokenStr);
         } catch (NumberFormatException nfe) {
@@ -137,14 +148,14 @@ public class PartialStartupDetector {
             return false;
         }
         final long syncToken = readSyncToken(resourceResolver, slingId);
-        if (syncToken != -1 && (syncToken >= seqNum)) {
+        if (syncToken != -1 && (syncToken >= currentSeqNum)) {
             return false;
         }
         partiallyStartedClusterNodeIds.add(id);
         logger.info(
                 "suppressMissingSyncToken: ignoring partially started clusterNode without valid syncToken (in "
                         + config.getSyncTokenPath() + ") : " + id
-                        + " (expected at least: " + seqNum + ", is: " + syncToken + ")");
+                        + " (expected at least: " + currentSeqNum + ", is: " + syncToken + ")");
         return true;
     }
 

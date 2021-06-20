@@ -92,4 +92,8 @@ public class OakTestConfig extends Config implements ModifiableTestBaseConfig {
     public void setSyncTokenEnabled(boolean enabled) {
         syncTokenEnabledOverwrite = enabled;
     }
+
+    public void setJoinerDelaySeconds(long joinerDelaySeconds) {
+        this.joinerDelaySeconds = joinerDelaySeconds;
+    }
 }

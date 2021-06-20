@@ -239,17 +239,23 @@ public class OakClusterViewService implements ClusterViewService {
         logger.trace("asClusterView: returning {}", cluster);
         InstanceDescription local = cluster.getLocalInstance();
         if (local != null) {
+            if (lowestSeqNum == -1) {
+                // this starts partialStartup suppression (if all other conditions met)
+                lowestSeqNum = seqNum;
+            }
             if (partialStartupDetector.getPartiallyStartedClusterNodeIds().isEmpty()) {
                 // success without suppressing -> reset the timeout
                 partialStartupSuppressingTimeout = 0;
-                if (lowestSeqNum == -1) {
-                    lowestSeqNum = seqNum;
-                }
             } else {
                 // success with suppressing -> set the timeout (if not already set)
                 if (partialStartupSuppressingTimeout == 0) {
-                    partialStartupSuppressingTimeout = System.currentTimeMillis()
-                            + PartialStartupDetector.SUPPRESSION_TIMEOUT_MILLIS;
+                    final long suppressionTimeoutSeconds = config.getSuppressionTimeoutSeconds();
+                    if (suppressionTimeoutSeconds <= 0) {
+                        partialStartupSuppressingTimeout = 0;
+                    } else {
+                        partialStartupSuppressingTimeout = System.currentTimeMillis()
+                                + (suppressionTimeoutSeconds * 1000);
+                    }
                 }
             }
             return cluster;
